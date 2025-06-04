@@ -1,6 +1,6 @@
 # NGFW Threat Intelligence & Hunting Query
 
-Advanced XQL query for threat analysis and hunting using Palo Alto Networks NGFW threat logs.
+Advanced Cortex XSIAM XQL query for threat analysis and hunting using Palo Alto Networks NGFW threat logs.
 
 ## Query
 
