@@ -1,4 +1,4 @@
-```Cortex XSIAM PaloAlto Crypto  Traffic
+```Cortex XSIAM PaloAlto Crypto Traffic
 // ===================================================================
 // Monitor Crypto traffic
 // ===================================================================
