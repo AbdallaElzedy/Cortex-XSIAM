@@ -1,3 +1,8 @@
+# XQL Internal Port Scanning Detection
+This XQL query analyzes Palo Alto Networks NGFW threat logs to identify potential port scanning activity from internal hosts. It detects common scanning signatures like Nmap, Masscan, and generic port scans, then aggregates the activity by source IP with basic risk scoring based on scan volume, target diversity, and port types accessed. The query provides visibility into lateral movement and reconnaissance activities by categorizing scan directions (internal-to-internal, internal-to-external, external-to-internal) and analyzing firewall responses, though it has limitations including reliance on threat signature detection and potential false positives from legitimate network tools, requiring proper tuning for each environment.
+
+
+
 ``` Internal Port Scanning Detection - NGFW Threat Logs
 
 // ===================================================================
