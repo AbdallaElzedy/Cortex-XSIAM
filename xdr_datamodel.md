@@ -959,41 +959,7 @@ filter event_type = ENUM.FILE
 
 ### Security Monitoring Queries
 
-#### Unsigned Executable Detection
-```sql
-SELECT agent_hostname, actor_process_image_name, actor_process_image_path
-FROM xdr_data 
-WHERE event_type = 'PROCESS'
-  AND event_sub_type = 'PROCESS_START' 
-  AND xdm.source.process.executable.signature_status = 'SIGNATURE_STATUS_UNSIGNED'
-```
-
-#### Failed Authentication Analysis
-```sql
-SELECT auth_client, auth_server, auth_outcome_reason, krb_error_code
-FROM xdr_data 
-WHERE event_type = 'STORY'
-  AND is_auth_story = true
-  AND xdm.event.outcome = 'OUTCOME_FAILED'
-```
-
-#### External Network Connections
-```sql
-SELECT actor_process_image_name, action_remote_ip, dst_action_location
-FROM xdr_data 
-WHERE event_type = 'STORY'
-  AND is_network_story = true
-  AND xdm.target.is_internal_ip = false
-```
-
-#### Registry Persistence Detection
-```sql
-SELECT actor_process_image_name, action_registry_key_name, action_registry_value_name
-FROM xdr_data 
-WHERE event_type = 'REGISTRY'
-  AND action_registry_key_name LIKE '%\\Run%'
-  AND event_sub_type = 'REGISTRY_SET_VALUE'
-```
+ 
 
 ### Performance Queries
 
