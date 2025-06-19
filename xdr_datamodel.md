@@ -6,6 +6,8 @@
 
 **Author:** Abdalla Elzedy | Security Engineer
 
+> **Disclaimer:** This is **not official documentation** from Palo Alto Networks. This guide represents a community initiative to bridge the documentation gap and empower security professionals. Created independently with love for the cybersecurity community, this resource aims to unlock the full potential of XDR data models and make advanced threat hunting accessible to all practitioners.
+
 ## Overview
 
 This document describes the XDR data model that transforms raw security event data into a standardized format using XQL. The model handles two main data streams:
