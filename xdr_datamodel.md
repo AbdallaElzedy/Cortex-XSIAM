@@ -382,33 +382,7 @@ filter event_type = ENUM.FILE
 - File reputation scoring
 - Threat ID association
 
-## Usage Examples
 
-### Querying Authentication Events
-```sql
--- Find failed Kerberos authentications
-SELECT * FROM xdr_data 
-WHERE xdm.event.type = 'STORY'
-  AND xdm.auth.kerberos_tgt.error_code IS NOT NULL
-  AND xdm.event.outcome = 'OUTCOME_FAILED'
-```
-
-### Querying Process Events
-```sql
--- Find process creations with suspicious signatures
-SELECT * FROM xdr_data 
-WHERE xdm.event.type = 'PROCESS'
-  AND xdm.event.operation = 'PROCESS_CREATE'
-  AND xdm.source.process.executable.signature_status = 'SIGNATURE_STATUS_UNSIGNED'
-```
-
-### Querying Network Events
-```sql
--- Find HTTP requests to external domains
-SELECT * FROM xdr_data 
-WHERE xdm.network.http.method IS NOT NULL
-  AND xdm.target.is_internal_ip = false
-```
 
 ## Best Practices
 
