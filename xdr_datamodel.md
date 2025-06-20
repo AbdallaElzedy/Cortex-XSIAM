@@ -888,7 +888,6 @@ and action_registry_key_name contains "\\Run"
 **High-Volume Process Activity**
 ```sql
 filter event_type = ENUM.PROCESS
-and _insert_time > current_time() - interval 1 hour
 | fields actor_process_image_name
 | stats count() by actor_process_image_name
 | sort count desc
@@ -899,10 +898,8 @@ and _insert_time > current_time() - interval 1 hour
 ```sql
 filter event_type = ENUM.STORY
 and is_network_story = true  
-and _insert_time > current_time() - interval 24 hours
 | fields action_remote_ip, action_total_upload, action_total_download
 | stats sum(action_total_upload) as total_upload, sum(action_total_download) as total_download by action_remote_ip
-| sort total_upload + total_download desc
 ```
 
 ### XQL Editor Validation
@@ -940,7 +937,6 @@ filter event_type = ENUM.FILE
 #### High Volume Process Activity
 ```sql
 filter event_type = ENUM.PROCESS
-and _insert_time > current_time() - interval 1 hour
 | fields actor_process_image_name
 | stats count() by actor_process_image_name
 | sort count desc
@@ -951,7 +947,6 @@ and _insert_time > current_time() - interval 1 hour
 ```sql
 filter event_type = ENUM.STORY
 and is_network_story = true
-and _insert_time > current_time() - interval 24 hours
 | fields action_remote_ip, action_total_upload, action_total_download
 | stats sum(action_total_upload) as total_upload, sum(action_total_download) as total_download by action_remote_ip
 | sort total_upload + total_download desc
@@ -1048,7 +1043,6 @@ and auth_identity = null
 ```sql
 // ✅ Efficient: Filter by type first, then narrow down
 filter event_type = ENUM.PROCESS
-and _insert_time > current_time() - interval 1 hour  
 and event_sub_type = ENUM.PROCESS_START
 and agent_os_type = ENUM.AGENT_OS_WINDOWS
 | fields actor_process_image_name, actor_process_image_path
@@ -1057,7 +1051,6 @@ and agent_os_type = ENUM.AGENT_OS_WINDOWS
 ```sql
 // ❌ Less efficient: Avoid broad filters without event_type
 filter actor_process_image_name contains "powershell"
-and _insert_time > current_time() - interval 1 hour
 ```
 
 
