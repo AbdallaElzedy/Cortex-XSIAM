@@ -1,4 +1,45 @@
-```Cortex XSIAM XQL Query
+# O365 / Azure AD Security Analysis (Cortex XQL)
+
+> Author: **Abdalla Elzedy**, Security Engineer
+
+A broad Cortex XSIAM / XDR hunting query over O365 / Azure AD audit logs that
+profiles authentication threats, privilege changes, and suspicious user behavior
+over the last 24 hours. It enriches each event with time and network context,
+aggregates per user and threat type, then applies a weighted risk score to surface
+the highest-priority cases.
+
+> **Note:** Organization-specific network ranges (internal NAT and campus CIDRs)
+> have been replaced with `<PLACEHOLDERS>`. See [Customization](#customization)
+> before running this in your own tenant.
+
+## What it does
+
+1. **Time enrichment:** classifies each event into Business Hours, After Hours, or
+   Night/Weekend, and extracts hour/date fields.
+2. **Threat classification:** tags events (failed login, anomalous login, password
+   activity, privilege change, user creation, account disable, successful login).
+3. **Network classification:** buckets `ClientIP` into Internal NAT, Campus Network,
+   Private Network (RFC1918), or External Internet.
+4. **Aggregation:** rolls up per `threat_level` / `ip_classification` / `UserId` with
+   counts for failed/anomalous/successful logins, privilege and account changes,
+   external IPs, off-hours activity, plus a forensic timeline.
+5. **Risk scoring:** applies a weighted formula and assigns a user risk profile and
+   recency status, then sorts and limits to the top 100 cases.
+
+### Risk weighting
+
+| Signal | Points each |
+|--------|-------------|
+| Failed login | 5 |
+| Anomalous login (failed-op but success result) | 10 |
+| Privilege change | 15 |
+| Account change | 20 |
+| External IP | 8 |
+| Off-hours user | 3 |
+
+## Query
+
+```xql
 // ===================================================================
 // O365/AZURE AD SECURITY ANALYSIS QUERY
 // ===================================================================
@@ -19,19 +60,19 @@ dataset = msft_o365_azure_ad_raw
        ),
 // ===== THREAT CLASSIFICATION =====
        threat_level = if(
-           Operation = "UserLoginFailed" and ResultStatus = "Failed", "🚨 FAILED_LOGIN",
-           Operation = "UserLoginFailed" and ResultStatus = "Success", "⚠️ ANOMALOUS_LOGIN",
-           Operation contains "password" or Operation contains "Password", "🔑 PASSWORD_ACTIVITY",
-           Operation contains "role" or Operation contains "group", "👑 PRIVILEGE_CHANGE",
-           Operation contains "Add" and Operation contains "user", "👤 USER_CREATION",
-           Operation contains "Disable" or Operation contains "Delete", "🗑️ ACCOUNT_DISABLE",
-           Operation = "UserLoggedIn" and ResultStatus = "Success", "✅ SUCCESSFUL_LOGIN",
+           Operation = "UserLoginFailed" and ResultStatus = "Failed", "FAILED_LOGIN",
+           Operation = "UserLoginFailed" and ResultStatus = "Success", "ANOMALOUS_LOGIN",
+           Operation contains "password" or Operation contains "Password", "PASSWORD_ACTIVITY",
+           Operation contains "role" or Operation contains "group", "PRIVILEGE_CHANGE",
+           Operation contains "Add" and Operation contains "user", "USER_CREATION",
+           Operation contains "Disable" or Operation contains "Delete", "ACCOUNT_DISABLE",
+           Operation = "UserLoggedIn" and ResultStatus = "Success", "SUCCESSFUL_LOGIN",
            ""
        ),
 // ===== NETWORK ANALYSIS =====
        ip_classification = if(
-           incidr(ClientIP, "140.180.240.0/24"), "Internal_NAT",
-           incidr(ClientIP, "128.112.0.0/16,165.1.0.0/16,137.83.0.0/16"), "Campus_Network",
+           incidr(ClientIP, "<INTERNAL_NAT_CIDR>"), "Internal_NAT",
+           incidr(ClientIP, "<CAMPUS_CIDR_1>,<CAMPUS_CIDR_2>,<CAMPUS_CIDR_3>"), "Campus_Network",
            incidr(ClientIP, "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"), "Private_Network",
            "External_Internet"
        )
@@ -102,13 +143,13 @@ dataset = msft_o365_azure_ad_raw
 | alter
     // User risk classification
     user_risk_profile = if(
-        failed_logins > 50, "🚨 BRUTE_FORCE_TARGET",
-        anomalous_logins > 20, "⚠️ ANOMALOUS_BEHAVIOR",
-        privilege_changes > 10, "👑 HIGH_PRIVILEGE_USER",
-        account_changes > 5, "👤 ACCOUNT_MANAGER",
-        external_ips > 3, "🌍 EXTERNAL_ACCESS_USER",
-        failure_rate > 50, "🔒 AUTHENTICATION_ISSUES",
-        "✅ NORMAL_USER"
+        failed_logins > 50, "BRUTE_FORCE_TARGET",
+        anomalous_logins > 20, "ANOMALOUS_BEHAVIOR",
+        privilege_changes > 10, "HIGH_PRIVILEGE_USER",
+        account_changes > 5, "ACCOUNT_MANAGER",
+        external_ips > 3, "EXTERNAL_ACCESS_USER",
+        failure_rate > 50, "AUTHENTICATION_ISSUES",
+        "NORMAL_USER"
     ),
     // Activity recency
     activity_recency = if(
@@ -151,3 +192,33 @@ dataset = msft_o365_azure_ad_raw
 // ===== TOP PRIORITY CASES =====
 | limit 100
 ```
+
+## Customization
+
+Replace these placeholders with values for your environment before running:
+
+| Placeholder | Replace with | Used for |
+|-------------|--------------|----------|
+| `<INTERNAL_NAT_CIDR>` | Your internal NAT egress range, e.g. `10.10.10.0/24` | Tagging traffic as `Internal_NAT` |
+| `<CAMPUS_CIDR_1..3>` | Your owned public IP ranges (comma-separated allowed) | Tagging traffic as `Campus_Network` |
+
+The RFC1918 private ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) are
+universal and left in place. Adjust the Business Hours window (`9` to `17`) and the
+24-hour lookback (`86400` seconds) to match your environment.
+
+## Notes
+
+- The `threat_level` and `user_risk_profile` thresholds (e.g. `failed_logins > 50`,
+  `anomalous_logins > 20`) are starting points. Tune them to your baseline before
+  acting on results.
+- "Anomalous login" here means a `UserLoginFailed` operation that nonetheless
+  returned a `Success` result status, which can indicate odd auth flows worth a look.
+- The `account_changes` aggregate keys on `"Add user"` and `"Delete"`. Confirm the
+  exact `Operation` strings in your tenant, since O365 operation names vary by
+  workload and can change.
+- The risk scoring uses raw `add` / `multiply` / `divide` nesting for portability.
+  The same logic can be flattened if your environment supports inline arithmetic.
+
+## Credit
+
+Authored by **Abdalla Elzedy**, Security Engineer.
