@@ -394,7 +394,7 @@ package managers) spawns shells the same way and must be excluded first.
 
 ```xql
 dataset = xdr_data
-| filter agent_os_type = ENUM.AGENT_OS_MACOS
+| filter agent_os_type = ENUM.AGENT_OS_MAC
       and event_type = ENUM.PROCESS and event_sub_type = ENUM.PROCESS_START
 | alter parent = lowercase(actor_process_image_name),
         cmd    = lowercase(action_process_image_command_line)
